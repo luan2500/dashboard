@@ -1,0 +1,146 @@
+Copie o código abaixo e salve como **`dashboard-cantina.html`**. Depois, abra o arquivo no navegador. Os dados são fictícios.
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard — Cantina do Colégio</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 24px;
+      font-family: Arial, sans-serif;
+      color: #e2e8f0;
+      background: #0f172a;
+    }
+    h1 { margin-bottom: 4px; }
+    .aviso { color: #94a3b8; }
+    .grade {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 22px;
+    }
+    .cartao {
+      padding: 18px;
+      background: #1e293b;
+      border-radius: 12px;
+    }
+    .cartao span {
+      display: block;
+      margin-top: 8px;
+      color: #22c55e;
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .graficos { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+    canvas { width: 100% !important; }
+  </style>
+</head>
+<body>
+  <h1>🍔 Cantina do Colégio — Vendas da semana</h1>
+  <div class="aviso">Dados fictícios para fins didáticos.</div>
+
+  <!-- KPIs: resumos que respondem “como estamos?” -->
+  <section class="grade">
+    <div class="cartao">Faturamento total <span id="total">—</span></div>
+    <div class="cartao">Itens vendidos <span id="itens">—</span></div>
+    <div class="cartao">Produto mais vendido <span id="campeao">—</span></div>
+  </section>
+
+  <!-- Gráficos: ajudam a comparar produtos e acompanhar os dias -->
+  <section class="grade graficos">
+    <div class="cartao"><canvas id="graficoProdutos"></canvas></div>
+    <div class="cartao"><canvas id="graficoDias"></canvas></div>
+  </section>
+
+  <script>
+    // Dados: cada objeto representa uma linha da tabela de vendas.
+    const vendas = [
+      { dia: "Seg", produto: "Pastel", qtd: 42, preco: 6 },
+      { dia: "Seg", produto: "Coxinha", qtd: 35, preco: 5 },
+      { dia: "Seg", produto: "Suco", qtd: 28, preco: 4 },
+      { dia: "Seg", produto: "Pão de queijo", qtd: 30, preco: 3 },
+      { dia: "Ter", produto: "Pastel", qtd: 38, preco: 6 },
+      { dia: "Ter", produto: "Coxinha", qtd: 40, preco: 5 },
+      { dia: "Ter", produto: "Suco", qtd: 25, preco: 4 },
+      { dia: "Ter", produto: "Pão de queijo", qtd: 33, preco: 3 },
+      { dia: "Qua", produto: "Pastel", qtd: 45, preco: 6 },
+      { dia: "Qua", produto: "Coxinha", qtd: 32, preco: 5 },
+      { dia: "Qua", produto: "Suco", qtd: 30, preco: 4 },
+      { dia: "Qua", produto: "Pão de queijo", qtd: 28, preco: 3 },
+      { dia: "Qui", produto: "Pastel", qtd: 60, preco: 6 },
+      { dia: "Qui", produto: "Coxinha", qtd: 48, preco: 5 },
+      { dia: "Qui", produto: "Suco", qtd: 41, preco: 4 },
+      { dia: "Qui", produto: "Pão de queijo", qtd: 39, preco: 3 },
+      { dia: "Sex", produto: "Pastel", qtd: 50, preco: 6 },
+      { dia: "Sex", produto: "Coxinha", qtd: 44, preco: 5 },
+      { dia: "Sex", produto: "Suco", qtd: 36, preco: 4 },
+      { dia: "Sex", produto: "Pão de queijo", qtd: 35, preco: 3 }
+    ];
+
+    // Processamento: calcula faturamento, itens e totais agrupados.
+    const faturamento = vendas.reduce((soma, v) => soma + v.qtd * v.preco, 0);
+    const totalItens = vendas.reduce((soma, v) => soma + v.qtd, 0);
+    const porProduto = {};
+    const porDia = {};
+
+    vendas.forEach(v => {
+      porProduto[v.produto] = (porProduto[v.produto] || 0) + v.qtd;
+      porDia[v.dia] = (porDia[v.dia] || 0) + v.qtd * v.preco;
+    });
+
+    const campeao = Object.keys(porProduto).reduce((a, b) =>
+      porProduto[a] > porProduto[b] ? a : b
+    );
+
+    // Exibição dos indicadores.
+    document.getElementById("total").textContent =
+      faturamento.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    document.getElementById("itens").textContent = totalItens;
+    document.getElementById("campeao").textContent = campeao;
+
+    // Gráfico de barras: compara unidades vendidas por produto.
+    Chart.defaults.color = "#e2e8f0";
+    new Chart(document.getElementById("graficoProdutos"), {
+      type: "bar",
+      data: {
+        labels: Object.keys(porProduto),
+        datasets: [{
+          label: "Unidades vendidas",
+          data: Object.values(porProduto),
+          backgroundColor: "#3b82f6"
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { title: { display: true, text: "Vendas por produto" } }
+      }
+    });
+
+    // Gráfico de linha: mostra a evolução do faturamento por dia.
+    new Chart(document.getElementById("graficoDias"), {
+      type: "line",
+      data: {
+        labels: Object.keys(porDia),
+        datasets: [{
+          label: "Faturamento (R$)",
+          data: Object.values(porDia),
+          borderColor: "#22c55e",
+          backgroundColor: "#22c55e",
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { title: { display: true, text: "Faturamento por dia" } }
+      }
+    });
+  </script>
+</body>
+</html>
+```
